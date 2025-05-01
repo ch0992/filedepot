@@ -1,0 +1,6 @@
+# charts/data/Chart.yaml
+apiVersion: v2
+name: data
+version: 0.1.0
+# Helm 차트 템플릿 (placeholder)
+description: Helm chart for data service
