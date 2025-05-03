@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file
+  labels:
+    app: file
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: file
+  template:
+    metadata:
+      labels:
+        app: file
+    spec:
+      containers:
+      - name: file
+        image: filedepot-file:local
+        envFrom:
+        - configMapRef:
+            name: filedepot-env
+        ports:
+        - containerPort: 8001
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 8001
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: file
+spec:
+  selector:
+    app: file
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001

@@ -2,5 +2,6 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY . /app
 ENV PYTHONPATH=/app
-RUN pip install --no-cache-dir fastapi uvicorn httpx pydantic pytest pytest-asyncio
+RUN apt-get update && apt-get install -y curl \
+    && pip install --no-cache-dir fastapi uvicorn httpx pydantic pytest pytest-asyncio
 CMD ["uvicorn", "app.services.log.main:app", "--host", "0.0.0.0", "--port", "8003", "--reload"]

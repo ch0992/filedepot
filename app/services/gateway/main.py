@@ -15,7 +15,19 @@ from fastapi import FastAPI
 from app.services.gateway.api.routes import router as gateway_router
 from app.core.config import settings
 
-app = FastAPI(title="Gateway Service", description="Auth/JWT gateway microservice")
+tags_metadata = [
+    {"name": "auth", "description": "인증 관련 API"},
+    {"name": "data", "description": "데이터 관련 API"},
+    {"name": "file", "description": "파일 관련 API"},
+    {"name": "log", "description": "로그 관련 API"},
+    {"name": "Health", "description": "헬스 체크 API"},
+]
+
+app = FastAPI(
+    title="Gateway Service",
+    description="Auth/JWT gateway microservice",
+    openapi_tags=tags_metadata
+)
 app.include_router(gateway_router)
 
 import logging
