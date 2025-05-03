@@ -1,12 +1,14 @@
 """
 게이트웨이 서비스 API 라우터
 """
-from fastapi import APIRouter, Depends
-from app.services.gateway.schemas.ping import PingResponse
+from fastapi import APIRouter
+
+from app.services.gateway.api.routes.data import curs
 
 router = APIRouter()
+router.include_router(curs.router)
 
-@router.get("/ping", response_model=PingResponse, summary="Ping-pong API")
-def ping():
-    """헬스 체크 및 테스트용 엔드포인트"""
+@router.get("/ping", summary="Health check", tags=["Health"])
+async def ping():
+    """헬스 체크 엔드포인트"""
     return {"message": "pong"}

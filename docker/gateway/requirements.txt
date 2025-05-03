@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+httpx>=0.22
+pytest
+pytest-asyncio
