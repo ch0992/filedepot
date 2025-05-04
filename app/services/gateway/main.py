@@ -45,21 +45,6 @@ app.add_middleware(TraceLoggingMiddleware)
 gateway_router.tags = ["gateway"]
 app.include_router(gateway_router)
 
-tags_metadata = [
-    {"name": "auth", "description": "인증 관련 API"},
-    {"name": "data", "description": "데이터 관련 API"},
-    {"name": "file", "description": "파일 관련 API"},
-    {"name": "log", "description": "로그 관련 API"},
-    {"name": "Health", "description": "헬스 체크 API"},
-]
-
-app = FastAPI(
-    title="Gateway Service",
-    description="Auth/JWT gateway microservice",
-    openapi_tags=tags_metadata
-)
-app.include_router(gateway_router)
-
 import logging
 
 @app.on_event("startup")
