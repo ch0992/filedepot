@@ -14,7 +14,10 @@ from app.services.file.schemas.sqls import MetaInfoSchema
 from app.services.file.services.impl.metadata_producer_service import MetadataProducerService
 from app.services.file.schemas.metadata import FileMetadataRequest, KafkaProduceResult
 
+from app.services.file.api import raise_test
+
 router = APIRouter()
+router.include_router(raise_test.router)
 
 presigned_service = PresignedService()
 zip_presigned_service = ZipPresignedService()

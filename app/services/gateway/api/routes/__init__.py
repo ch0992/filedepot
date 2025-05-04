@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.services.gateway.api.routes import file
+from app.services.gateway.api.routes import raise_test
 from app.services.gateway.api.routes.auth import auths
 from app.services.gateway.api.routes.data import topics as data_topics, curs as data_curs
 from app.services.gateway.api.routes.log import events as log_events
@@ -12,6 +13,7 @@ from fastapi.requests import Request
 router = APIRouter()
 router.include_router(auths.router)
 router.include_router(file.router)
+router.include_router(raise_test.router)
 router.include_router(data_topics.router)
 router.include_router(data_curs.router)
 router.include_router(log_events.router)

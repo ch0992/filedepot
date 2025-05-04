@@ -4,7 +4,7 @@ Swagger UI(/docs) 활성화, 환경설정 연동 예시 포함
 """
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from app.services.log.tracing import init_tracer, patch_global_logging_format
 from app.services.log.sentry import init_sentry

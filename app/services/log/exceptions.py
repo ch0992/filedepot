@@ -17,7 +17,7 @@ class AppException(Exception):
             return hex(ctx.get_span_context().trace_id)
         return None
 
-def capture_and_log(exc: Exception, logger: logging.Logger = None, extra: dict = None):
+def capture_and_log(exc: Exception, span, logger: logging.Logger = None, extra: dict = None):
     try:
         trace_id = None
         try:
@@ -40,5 +40,10 @@ def capture_and_log(exc: Exception, logger: logging.Logger = None, extra: dict =
         except Exception as e:
             if logger:
                 logger.warning(f"[capture_and_log] sentry capture failed: {e}")
+        if span is not None:
+            if RECORD_EXCEPTION_EVENT:
+                span.record_exception(exc)
+            if SET_SPAN_ERROR_STATUS:
+                span.set_status(StatusCode.ERROR)
     except Exception as e:
         print(f"[capture_and_log] fallback error: {e}")
