@@ -6,6 +6,11 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from app.services.log.tracing import init_tracer
+from app.services.log.sentry import init_sentry
+from app.services.log.middleware import install_exception_handlers, TraceLoggingMiddleware
+from app.services.gateway.api.routes import router as gateway_router
+
 # .env 파일 로드 (상위 루트 기준)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 ENV_PATH = os.path.join(BASE_DIR, '.env')
