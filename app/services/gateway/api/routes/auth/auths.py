@@ -4,7 +4,7 @@ from app.services.gateway.services.impl.auth_module_service import AuthModuleSer
 from app.services.gateway.schemas.auths import AuthWorkspaceList
 
 auth_service = AuthModuleService()
-router = APIRouter()
+router = APIRouter(prefix="/auth")
 
 @router.get(
     "/imgplt/auths",

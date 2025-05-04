@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, HTTPException, Header
 from app.services.gateway.services.impl.file_zip_service import FileZipService
 from app.services.file.schemas.zips import ZipPresignedResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/file")
 file_zip_service = FileZipService()
 
 from app.services.gateway.services.impl.auth_module_service import verify_access_token_dependency, auth_service

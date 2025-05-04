@@ -3,7 +3,7 @@ from typing import Optional
 from app.services.gateway.services.impl.file_download_service import FileDownloadService
 from app.services.file.schemas.presigned import PresignedURLResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/file")
 file_download_service = FileDownloadService()
 
 from app.services.gateway.services.impl.auth_module_service import verify_access_token_dependency, auth_service

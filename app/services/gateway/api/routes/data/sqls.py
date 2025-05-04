@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, Body, Header, status
 from typing import Optional
-from app.services.data.services.interfaces.sql_query_interface import SqlQueryInterface
+from app.services.data.services.interfaces.meta_query import IMetaQueryService
+from app.services.data.services.impl.pg_query import PostgresMetaQueryService
 from app.services.log.tracing import get_tracer
 from app.services.log.exceptions import capture_and_log
 
-router = APIRouter()
-sql_query_service = SqlQueryInterface()  # 실제 구현체로 대체 필요
+router = APIRouter(prefix="/data")
+sql_query_service = PostgresMetaQueryService()
 
 @router.post(
     "/imgplt/sqls",

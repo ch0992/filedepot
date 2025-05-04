@@ -4,7 +4,7 @@ from app.services.gateway.services.impl.file_sqls_service import FileSqlsService
 from app.services.gateway.services.impl.auth_module_service import auth_service
 from app.services.file.schemas.sqls import MetaInfoSchema
 
-router = APIRouter()
+router = APIRouter(prefix="/file")
 file_sqls_service = FileSqlsService()
 
 from app.services.gateway.services.impl.auth_module_service import verify_access_token_dependency

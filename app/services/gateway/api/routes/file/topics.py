@@ -2,7 +2,7 @@ from fastapi import APIRouter, Path, HTTPException, Header
 from app.services.gateway.services.impl.file_metadata_service import FileMetadataService
 from app.services.file.schemas.metadata import FileMetadataRequest, KafkaProduceResult
 
-router = APIRouter()
+router = APIRouter(prefix="/file")
 file_metadata_service = FileMetadataService()
 
 from app.services.gateway.services.impl.auth_module_service import verify_access_token_dependency, auth_service
