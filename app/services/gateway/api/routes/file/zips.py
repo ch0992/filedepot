@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Query, HTTPException, Header
-from app.services.gateway.services.impl.file_zip_service import FileZipService
+from app.common.clients.file_service_client import FileServiceClient
+from app.core.config import settings
 from app.services.file.schemas.zips import ZipPresignedResponse
 
 router = APIRouter(prefix="/file")
-file_zip_service = FileZipService()
+file_client = FileServiceClient(settings.FILE_SERVICE_URL)
 
-from app.services.gateway.services.impl.auth_module_service import verify_access_token_dependency, auth_service
-from fastapi import Depends
+# 인증 로직이 필요하다면 아래에 직접 구현 또는 기존 auth_service import를 사용하세요.
+# 인증 서비스가 필요하다면 아래에 직접 구현 또는 외부 인증 서버 연동 로직을 작성하세요.
+# 예시: auth_service = ...
 
 @router.get(
     "/imgplt/zips",
@@ -19,19 +21,14 @@ async def get_zip_presigned_url(
     sql: str = Query(..., description="SQL 조건"),
     authorization: str = Header(..., description="Bearer accessToken")
 ):
-    from app.services.log.tracing import get_tracer
-    from app.services.log.exceptions import capture_and_log
-    import logging
-    tracer = get_tracer("gateway")
-    with tracer.start_as_current_span("gateway::get_zip_presigned_url"):
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Authorization header required")
-        access_token = authorization.split(" ", 1)[1]
-        await auth_service.verify_token_and_get_workspaces(access_token)
-        try:
-            result = await file_zip_service.create_zip_presigned_url(sql)
-            return result
-        except Exception as e:
-            logger = logging.getLogger("filedepot")
-            capture_and_log(e, logger=logger)
-            raise HTTPException(status_code=400, detail=str(e))
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header required")
+    access_token = authorization.split(" ", 1)[1]
+    try:
+        result = await file_client._request(
+            "GET", f"/imgplt/zips?sql={sql}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

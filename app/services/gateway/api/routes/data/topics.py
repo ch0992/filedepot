@@ -1,80 +1,46 @@
-from fastapi import APIRouter, Path, HTTPException, Body, Header, status, Depends
-from typing import Optional
-from app.services.gateway.services.impl.data_producer_service import DataProducerService
-from app.services.gateway.services.impl.auth_module_service import AuthModuleService
+from fastapi import APIRouter, Path, HTTPException, Body, Header
 from app.services.data.schemas.table import TableRecordRequest, KafkaProduceResult
 from app.common.clients.data_service_client import DataServiceClient
 from app.core.config import settings
 
 router = APIRouter(prefix="/data")
-data_producer_service = DataProducerService()
+data_client = DataServiceClient(settings.DATA_SERVICE_URL)
 
-def get_data_client():
-    return DataServiceClient(settings.DATA_SERVICE_URL)
-
-from app.services.log.tracing import get_tracer
-from app.services.log.exceptions import capture_and_log
-import logging
-
-@router.get("/ping", summary="Data health check", tags=["Health"])
-async def data_ping(data_client: DataServiceClient = Depends(get_data_client)):
-    tracer = get_tracer("gateway")
-    with tracer.start_as_current_span("gateway::data_ping"):
-        try:
-            return await data_client.health()
-        except Exception as e:
-            logger = logging.getLogger("filedepot")
-            capture_and_log(e, logger=logger)
-            raise HTTPException(status_code=500, detail="Internal Server Error")
-
-@router.get(
-    "/topics",
-    tags=["data"],
-    summary="토픽 목록 조회",
-    description="등록된 Kafka 토픽 목록을 조회합니다."
-)
-async def get_topics():
-    from app.services.log.tracing import get_tracer
-    from app.services.log.exceptions import capture_and_log
-    import logging
-    tracer = get_tracer("gateway")
-    with tracer.start_as_current_span("gateway::get_topics"):
-        try:
-            # 실제로는 data 서비스에서 토픽 목록을 가져와야 함
-            return ["topic-a", "topic-b"]
-        except Exception as e:
-            logger = logging.getLogger("filedepot")
-            capture_and_log(e, logger=logger)
-            raise HTTPException(status_code=500, detail="Internal Server Error")
-
-def get_data_client():
-    return DataServiceClient(settings.DATA_SERVICE_URL)
+@router.get("/topics", summary="토픽 목록 조회", tags=["Data"])
+async def get_topics(authorization: str = Header(..., description="Bearer accessToken")):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header required")
+    access_token = authorization.split(" ", 1)[1]
+    try:
+        result = await data_client._request(
+            "GET", "/topics",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post(
     "/topics/{table}",
+    response_model=KafkaProduceResult,
     tags=["data"],
-    summary="Kafka 토픽에 데이터 적재",
-    description="지정한 테이블(Kafka 토픽)에 데이터를 적재합니다."
+    summary="Kafka를 통한 Mart 단건 적재",
+    description="Mart 테이블로 전송할 단건 데이터를 Kafka topic에 발행합니다."
 )
 async def produce_table_record_to_kafka(
     table: str = Path(..., description="Kafka topic명(Mart 테이블명)"),
-    body: dict = Body(...),
-    authorization: Optional[str] = Header(None, description="Bearer accessToken"),
-    data_client: DataServiceClient = Depends(get_data_client)
+    body: TableRecordRequest = Body(...),
+    authorization: str = Header(..., description="Bearer accessToken")
 ):
-    from app.services.log.tracing import get_tracer
-    from app.services.log.exceptions import capture_and_log
-    import logging
-    tracer = get_tracer("gateway")
-    with tracer.start_as_current_span("gateway::produce_table_record_to_kafka"):
-        try:
-            if not authorization or not authorization.startswith("Bearer "):
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-            # 실제 인증 로직에 따라 user_id 추출 필요 (예시)
-            user_id = "test-user"
-            # data 서비스의 produce_table_record_to_kafka API 호출
-            return await data_client._request("POST", f"/topics/{table}", json=body)
-        except Exception as e:
-            logger = logging.getLogger("filedepot")
-            capture_and_log(e, logger=logger)
-            raise HTTPException(status_code=500, detail="Internal Server Error")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header required")
+    access_token = authorization.split(" ", 1)[1]
+    try:
+        result = await data_client._request(
+            "POST", f"/topics/{table}",
+            json=body.dict(),
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

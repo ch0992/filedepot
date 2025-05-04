@@ -19,12 +19,12 @@ api_get "/file/imgplt/aliases"
 api_get "/file/imgplt/s3/test.txt"
 api_get "/file/imgplt/zips?sql=SELECT%20*%20FROM%20files"
 api_get "/file/imgplt/sqls?query=SELECT%20*%20FROM%20files"
-api_post "/file/topics/test-topic" '{"field": "value"}'
+api_post "/file/topics/test-topic" '{"file_id": "example_id", "size": 123}'
 api_get "/file/ping"
 
 # data 서비스
 api_get "/data/topics"
-api_post "/data/topics/test-table" '{"field": "value"}'
+api_post "/data/topics/test-table" '{"order_id": "order123", "user_id": "user456", "amount": 100}'
 api_post "/data/sqls" '{"sql": "SELECT * FROM data"}'
 api_post "/data/curs" '{"query": "SELECT * FROM data", "cursor": null}'
 api_get "/data/ping"

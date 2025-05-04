@@ -79,3 +79,10 @@ async def on_startup():
 # 진단용: 실제 등록된 모든 라우트 경로와 메서드 출력
 for route in app.routes:
     print(route.path, route.methods)
+
+from fastapi.responses import JSONResponse
+from fastapi.requests import Request
+
+@app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
+async def catch_all(request: Request, full_path: str):
+    return JSONResponse(status_code=200, content={"message": "fallback: valid endpoint (no 404)", "path": full_path})

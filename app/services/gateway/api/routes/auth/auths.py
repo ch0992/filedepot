@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Header, HTTPException, Depends, status
 from typing import Optional
-from app.services.gateway.services.impl.auth_module_service import AuthModuleService
+# 인증 서비스가 필요하다면 아래에 직접 구현 또는 외부 인증 서버 연동 로직을 작성하세요.
 from app.services.gateway.schemas.auths import AuthWorkspaceList
 
-auth_service = AuthModuleService()
+# 예시: auth_service = ... (외부 인증 서버 연동)
 router = APIRouter(prefix="/auth")
 
 @router.get(
@@ -16,19 +16,4 @@ router = APIRouter(prefix="/auth")
 async def verify_auth(
     authorization: Optional[str] = Header(None, description="Bearer accessToken")
 ):
-    from app.services.log.tracing import get_tracer
-    from app.services.log.exceptions import capture_and_log
-    import logging
-    tracer = get_tracer("gateway")
-    with tracer.start_as_current_span("gateway::verify_auth"):
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-        access_token = authorization.split(" ", 1)[1]
-        try:
-            return await auth_service.verify_token_and_get_workspaces(access_token)
-        except HTTPException as e:
-            raise e
-        except Exception as e:
-            logger = logging.getLogger("filedepot")
-            capture_and_log(e, logger=logger)
-            raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=501, detail="Not implemented: 실제 인증 서비스 연동 필요")

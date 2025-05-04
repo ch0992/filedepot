@@ -1,12 +1,9 @@
 from fastapi import APIRouter, HTTPException, Body, Header, status
-from typing import Optional
-from app.services.data.services.interfaces.meta_query import IMetaQueryService
-from app.services.data.services.impl.pg_query import PostgresMetaQueryService
-from app.services.log.tracing import get_tracer
-from app.services.log.exceptions import capture_and_log
+from app.core.config import settings
+from app.common.clients.data_service_client import DataServiceClient
 
 router = APIRouter(prefix="/data")
-sql_query_service = PostgresMetaQueryService()
+data_client = DataServiceClient(settings.DATA_SERVICE_URL)
 
 @router.post(
     "/imgplt/sqls",
@@ -16,20 +13,13 @@ sql_query_service = PostgresMetaQueryService()
 )
 async def get_sql_result(
     sql: str = Body(..., embed=True),
-    authorization: Optional[str] = Header(None, description="Bearer accessToken")
+    authorization: str = Header(None)
 ):
-    from app.services.log.tracing import get_tracer
-    from app.services.log.exceptions import capture_and_log
-    import logging
-    tracer = get_tracer("gateway-sqls")
-    with tracer.start_as_current_span("gateway::sqls") as span:
-        try:
-            if not authorization or not authorization.startswith("Bearer "):
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-            # 내부 서비스 호출 시에도 tracing 활용 가능
-            result = await sql_query_service.query_by_sql(sql)
-            return result
-        except Exception as e:
-            logger = logging.getLogger("filedepot")
-            capture_and_log(e, logger=logger)
-            raise HTTPException(status_code=500, detail="Internal error")
+    if authorization is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
+    access_token = authorization.split(" ", 1)[1]
+    try:
+        result = await data_client._request("POST", "/imgplt/sqls", json={"sql": sql}, headers={"Authorization": f"Bearer {access_token}"})
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

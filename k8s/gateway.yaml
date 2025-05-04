@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gateway
+  namespace: filedepot
   labels:
     app: gateway
 spec:
@@ -24,14 +25,14 @@ spec:
         - containerPort: 8000
         readinessProbe:
           httpGet:
-            path: /file/ping
+            path: /gateway/ping
             port: 8000
           initialDelaySeconds: 3
           periodSeconds: 5
           failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /file/ping
+            path: /gateway/ping
             port: 8000
           initialDelaySeconds: 10
           periodSeconds: 10
@@ -41,6 +42,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: gateway
+  namespace: filedepot
 spec:
   type: ClusterIP
   selector:

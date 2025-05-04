@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Path, Query, HTTPException, Header
-from typing import Optional
-from app.services.gateway.services.impl.file_download_service import FileDownloadService
+from fastapi import APIRouter, Path, HTTPException, Header
 from app.services.file.schemas.presigned import PresignedURLResponse
+from app.common.clients.file_service_client import FileServiceClient
+from app.core.config import settings
 
 router = APIRouter(prefix="/file")
-file_download_service = FileDownloadService()
-
-from app.services.gateway.services.impl.auth_module_service import verify_access_token_dependency, auth_service
-from fastapi import Depends
+file_client = FileServiceClient(settings.FILE_SERVICE_URL)
 
 @router.get(
     "/imgplt/s3/{file_path:path}",
@@ -20,19 +17,14 @@ async def get_presigned_url(
     file_path: str = Path(..., description="다운로드할 파일 경로"),
     authorization: str = Header(..., description="Bearer accessToken")
 ):
-    from app.services.log.tracing import get_tracer
-    from app.services.log.exceptions import capture_and_log
-    import logging
-    tracer = get_tracer("gateway")
-    with tracer.start_as_current_span("gateway::get_presigned_url"):
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Authorization header required")
-        access_token = authorization.split(" ", 1)[1]
-        await auth_service.verify_token_and_get_workspaces(access_token)
-        try:
-            result = await file_download_service.create_presigned_url(file_path)
-            return result
-        except Exception as e:
-            logger = logging.getLogger("filedepot")
-            capture_and_log(e, logger=logger)
-            raise HTTPException(status_code=400, detail=str(e))
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header required")
+    access_token = authorization.split(" ", 1)[1]
+    try:
+        result = await file_client._request(
+            "GET", f"/imgplt/s3/{file_path}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
