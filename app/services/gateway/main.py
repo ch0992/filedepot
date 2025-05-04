@@ -4,16 +4,41 @@ Swagger UI(/docs) 활성화, 환경설정 연동 예시 포함
 """
 import os
 from dotenv import load_dotenv
+from fastapi import FastAPI
 
-# 반드시 .env를 import보다 먼저 로드 (경로 고정)
+# .env 파일 로드 (상위 루트 기준)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 ENV_PATH = os.path.join(BASE_DIR, '.env')
 load_dotenv(ENV_PATH, override=True)
 print("[gateway] AUTH_MODE (from .env):", os.environ.get("AUTH_MODE"))
 
-from fastapi import FastAPI
-from app.services.gateway.api.routes import router as gateway_router
-from app.core.config import settings
+tags_metadata = [
+    {"name": "auth", "description": "인증 관련 API"},
+    {"name": "data", "description": "데이터 관련 API"},
+    {"name": "file", "description": "파일 관련 API"},
+    {"name": "log", "description": "로그 관련 API"},
+    {"name": "Health", "description": "헬스 체크 API"},
+]
+
+app = FastAPI(
+    title="Gateway Service",
+    description="Auth/JWT gateway microservice",
+    openapi_tags=tags_metadata
+)
+
+# OpenTelemetry 초기화
+init_tracer(os.getenv("OTEL_EXPORTER", "stdout"))
+
+# Sentry 초기화
+init_sentry(dsn=os.getenv("SENTRY_DSN", ""), environment=os.getenv("ENV", "dev"))
+
+# 예외 핸들러 및 미들웨어 등록
+install_exception_handlers(app)
+app.add_middleware(TraceLoggingMiddleware)
+
+# 라우터 등록
+gateway_router.tags = ["gateway"]
+app.include_router(gateway_router)
 
 tags_metadata = [
     {"name": "auth", "description": "인증 관련 API"},

@@ -13,6 +13,9 @@ async def file_ping(file_client: FileServiceClient = Depends(get_file_client)):
     """File 서비스 헬스 체크 엔드포인트 (실제 file 서비스로 전달)"""
     return await file_client.health()
 
+from app.services.log.tracing import get_tracer
+from app.services.log.exceptions import capture_and_log
+
 @router.get(
     "/imgplt/aliases",
     tags=["file"],
@@ -23,8 +26,14 @@ async def get_aliases(
     authorization: Optional[str] = Header(None, description="Bearer accessToken"),
     file_client: FileServiceClient = Depends(get_file_client)
 ):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-    # 실제 인증 로직에 따라 user_id 추출 필요 (예시)
-    user_id = "test-user"
-    return await file_client.get_aliases(user_id)
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::get_aliases"):
+        try:
+            if not authorization or not authorization.startswith("Bearer "):
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
+            # 실제 인증 로직에 따라 user_id 추출 필요 (예시)
+            user_id = "test-user"
+            return await file_client.get_aliases(user_id)
+        except Exception as e:
+            capture_and_log(e)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
