@@ -21,12 +21,19 @@ async def get_meta_sqls(
     query: str = Query(..., description="실행할 SQL 쿼리"),
     authorization: str = Header(..., description="Bearer accessToken")
 ):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authorization header required")
-    access_token = authorization.split(" ", 1)[1]
-    await auth_service.verify_token_and_get_workspaces(access_token)
-    try:
-        result = await file_sqls_service.query_metadata(query)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    from app.services.log.tracing import get_tracer
+    from app.services.log.exceptions import capture_and_log
+    import logging
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::get_meta_sqls"):
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Authorization header required")
+        access_token = authorization.split(" ", 1)[1]
+        await auth_service.verify_token_and_get_workspaces(access_token)
+        try:
+            result = await file_sqls_service.query_metadata(query)
+            return result
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=400, detail=str(e))

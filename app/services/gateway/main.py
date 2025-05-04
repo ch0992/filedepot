@@ -6,10 +6,13 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from app.services.log.tracing import init_tracer
+from app.services.log.tracing import init_tracer, patch_global_logging_format
 from app.services.log.sentry import init_sentry
 from app.services.log.middleware import install_exception_handlers, TraceLoggingMiddleware
 from app.services.gateway.api.routes import router as gateway_router
+
+# 글로벌 로그 포맷터 패치(최상단에 적용)
+patch_global_logging_format()
 
 # .env 파일 로드 (상위 루트 기준)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -46,13 +49,27 @@ gateway_router.tags = ["gateway"]
 app.include_router(gateway_router)
 
 import logging
+import sys
+import traceback
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print("[Global Exception Handler] 예외 발생:", file=sys.stderr)
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+    )
 
 @app.on_event("startup")
-def print_auth_mode():
+async def on_startup():
     mode = os.environ.get("AUTH_MODE")
     local_token = os.environ.get("AUTH_LOCAL_TOKEN")
     remote_url = os.environ.get("AUTH_SERVER_URL")
     logging.basicConfig(level=logging.INFO)
+    logging.info("Gateway service started.")
     logging.info(f"[gateway] AUTH_MODE={mode}")
     if mode == "local" and local_token:
         logging.info(f"[gateway] AUTH_LOCAL_TOKEN={local_token}")

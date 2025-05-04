@@ -5,7 +5,7 @@ NAMESPACE="filedepot"
 CONFIGMAP_NAME="filedepot-env"
 
 # 1. .env 파일을 ConfigMap으로 생성/업데이트
-kubectl create configmap $CONFIGMAP_NAME --from-env-file=.env -n $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap $CONFIGMAP_NAME --from-env-file="$(dirname "$0")/../.env" -n $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
 echo "[INFO] ConfigMap $CONFIGMAP_NAME updated in namespace $NAMESPACE."
 

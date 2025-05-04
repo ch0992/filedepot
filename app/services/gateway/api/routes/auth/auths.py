@@ -16,12 +16,19 @@ router = APIRouter()
 async def verify_auth(
     authorization: Optional[str] = Header(None, description="Bearer accessToken")
 ):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-    access_token = authorization.split(" ", 1)[1]
-    try:
-        return await auth_service.verify_token_and_get_workspaces(access_token)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    from app.services.log.tracing import get_tracer
+    from app.services.log.exceptions import capture_and_log
+    import logging
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::verify_auth"):
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
+        access_token = authorization.split(" ", 1)[1]
+        try:
+            return await auth_service.verify_token_and_get_workspaces(access_token)
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=500, detail=str(e))

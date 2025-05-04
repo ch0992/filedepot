@@ -24,8 +24,18 @@ async def data_ping(data_client: DataServiceClient = Depends(get_data_client)):
     description="등록된 Kafka 토픽 목록을 조회합니다."
 )
 async def get_topics():
-    # 실제로는 data 서비스에서 토픽 목록을 가져와야 함
-    return ["topic-a", "topic-b"]
+    from app.services.log.tracing import get_tracer
+    from app.services.log.exceptions import capture_and_log
+    import logging
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::get_topics"):
+        try:
+            # 실제로는 data 서비스에서 토픽 목록을 가져와야 함
+            return ["topic-a", "topic-b"]
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
 def get_data_client():
     return DataServiceClient(settings.DATA_SERVICE_URL)
@@ -42,9 +52,19 @@ async def produce_table_record_to_kafka(
     authorization: Optional[str] = Header(None, description="Bearer accessToken"),
     data_client: DataServiceClient = Depends(get_data_client)
 ):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-    # 실제 인증 로직에 따라 user_id 추출 필요 (예시)
-    user_id = "test-user"
-    # data 서비스의 produce_table_record_to_kafka API 호출
-    return await data_client._request("POST", f"/topics/{table}", json=body)
+    from app.services.log.tracing import get_tracer
+    from app.services.log.exceptions import capture_and_log
+    import logging
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::produce_table_record_to_kafka"):
+        try:
+            if not authorization or not authorization.startswith("Bearer "):
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
+            # 실제 인증 로직에 따라 user_id 추출 필요 (예시)
+            user_id = "test-user"
+            # data 서비스의 produce_table_record_to_kafka API 호출
+            return await data_client._request("POST", f"/topics/{table}", json=body)
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=500, detail="Internal Server Error")

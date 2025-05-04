@@ -17,6 +17,9 @@ async def get_sql_result(
     sql: str = Body(..., embed=True),
     authorization: Optional[str] = Header(None, description="Bearer accessToken")
 ):
+    from app.services.log.tracing import get_tracer
+    from app.services.log.exceptions import capture_and_log
+    import logging
     tracer = get_tracer("gateway-sqls")
     with tracer.start_as_current_span("gateway::sqls") as span:
         try:
@@ -26,5 +29,6 @@ async def get_sql_result(
             result = await sql_query_service.query_by_sql(sql)
             return result
         except Exception as e:
-            capture_and_log(e, router.logger if hasattr(router, "logger") else None)
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
             raise HTTPException(status_code=500, detail="Internal error")
