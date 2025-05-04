@@ -8,10 +8,20 @@ router = APIRouter(prefix="/log")
 def get_log_client():
     return LogServiceClient(settings.LOG_SERVICE_URL)
 
+from app.services.log.tracing import get_tracer
+from app.services.log.exceptions import capture_and_log
+import logging
+
 @router.get("/ping", summary="Log health check", tags=["Health"])
 async def log_ping(log_client: LogServiceClient = Depends(get_log_client)):
-    """Log 서비스 헬스 체크 엔드포인트 (실제 log 서비스로 전달)"""
-    return await log_client.health()
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::log_ping"):
+        try:
+            return await log_client.health()
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/log/event", tags=["log"], summary="로그 이벤트 기록")
 async def log_event(

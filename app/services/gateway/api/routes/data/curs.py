@@ -17,6 +17,10 @@ def _cursor_query_logic(request: CursorQueryRequest, authorization: Optional[str
         lambda _: data_cursor_service.cursor_query(request)
     )
 
+from app.services.log.tracing import get_tracer
+from app.services.log.exceptions import capture_and_log
+import logging
+
 @router.post(
     "/imgplt/curs",
     response_model=CursorQueryResult,
@@ -28,15 +32,19 @@ async def cursor_query_imgplt(
     request: CursorQueryRequest = Body(...),
     authorization: Optional[str] = Header(None, description="Bearer accessToken")
 ):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-    try:
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::cursor_query_imgplt"):
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
         access_token = authorization.split(" ", 1)[1]
-        await auth_service.verify_token_and_get_workspaces(access_token)
-        result = await data_cursor_service.cursor_query(request)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        try:
+            await auth_service.verify_token_and_get_workspaces(access_token)
+            result = await data_cursor_service.cursor_query(request)
+            return result
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=500, detail=str(e))
 
 @router.post(
     "/curs",

@@ -12,10 +12,20 @@ data_producer_service = DataProducerService()
 def get_data_client():
     return DataServiceClient(settings.DATA_SERVICE_URL)
 
+from app.services.log.tracing import get_tracer
+from app.services.log.exceptions import capture_and_log
+import logging
+
 @router.get("/ping", summary="Data health check", tags=["Health"])
 async def data_ping(data_client: DataServiceClient = Depends(get_data_client)):
-    """Data 서비스 헬스 체크 엔드포인트 (실제 data 서비스로 전달)"""
-    return await data_client.health()
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::data_ping"):
+        try:
+            return await data_client.health()
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.get(
     "/topics",

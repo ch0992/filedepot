@@ -8,10 +8,20 @@ router = APIRouter(prefix="/file")
 def get_file_client():
     return FileServiceClient(settings.FILE_SERVICE_URL)
 
+from app.services.log.tracing import get_tracer
+from app.services.log.exceptions import capture_and_log
+import logging
+
 @router.get("/ping", summary="File health check", tags=["Health"])
 async def file_ping(file_client: FileServiceClient = Depends(get_file_client)):
-    """File 서비스 헬스 체크 엔드포인트 (실제 file 서비스로 전달)"""
-    return await file_client.health()
+    tracer = get_tracer("gateway")
+    with tracer.start_as_current_span("gateway::file_ping"):
+        try:
+            return await file_client.health()
+        except Exception as e:
+            logger = logging.getLogger("filedepot")
+            capture_and_log(e, logger=logger)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
 from app.services.log.tracing import get_tracer
 from app.services.log.exceptions import capture_and_log

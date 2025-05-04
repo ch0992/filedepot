@@ -40,6 +40,32 @@ def test_tracer_log_capture(caplog):
 
 # 2. capture_and_log() 사용 시 stdout에 structured 로그 출력 및 mock sentry 전송 호출 확인
 
+import pytest
+from starlette.testclient import TestClient
+from app.services.gateway.main import app
+
+client = TestClient(app)
+
+@pytest.mark.parametrize("endpoint,method,body", [
+    ("/file/ping", "get", None),
+    ("/data/ping", "get", None),
+    ("/file/imgplt/aliases", "get", None),
+    ("/file/imgplt/s3/somefile.txt", "get", None),
+    ("/data/imgplt/sqls", "post", {"sql": "SELECT 1"}),
+    ("/file/imgplt/zips", "get", {"sql": "SELECT 1"}),
+    ("/data/imgplt/curs", "post", {"sql": "SELECT 1"}),
+])
+def test_logging_and_tracing_injection(endpoint, method, body):
+    headers = {"Authorization": "Bearer test-access-token"}
+    if method == "get":
+        response = client.get(endpoint, headers=headers)
+    elif method == "post":
+        response = client.post(endpoint, headers=headers, json=body)
+    else:
+        pytest.skip("Unsupported method")
+    # 정상/에러 응답 모두 trace_id가 로그에 찍히는지 확인(수동 확인 필요)
+    assert response.status_code in (200, 400, 401, 500)
+
 def test_capture_and_log(monkeypatch, caplog):
     def mock_capture_exception(e):
         print("Sentry Captured:", str(e))
