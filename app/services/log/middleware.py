@@ -12,7 +12,15 @@ class TraceLoggingMiddleware(BaseHTTPMiddleware):
         with tracer.start_as_current_span(f"HTTP {request.method} {request.url.path}") as span:
             logger = logging.getLogger("filedepot")
             logger = inject_trace_context(logger, span)
-            logger.info(f"[access] {request.method} {request.url.path}", extra={"path": str(request.url)})
+            trace_ctx = span.get_span_context()
+            logger.info(
+                f"[access] {request.method} {request.url.path}",
+                extra={
+                    "path": str(request.url),
+                    "trace_id": format(trace_ctx.trace_id, 'x') if trace_ctx and trace_ctx.is_valid else "-",
+                    "span_id": format(trace_ctx.span_id, 'x') if trace_ctx and trace_ctx.is_valid else "-"
+                }
+            )
             try:
                 response = await call_next(request)
                 return response

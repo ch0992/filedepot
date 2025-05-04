@@ -18,14 +18,27 @@ class AppException(Exception):
         return None
 
 def capture_and_log(exc: Exception, logger: logging.Logger = None, extra: dict = None):
-    trace_id = None
-    ctx = trace.get_current_span()
-    if ctx and ctx.get_span_context().is_valid:
-        trace_id = hex(ctx.get_span_context().trace_id)
-    log_extra = extra or {}
-    if trace_id:
-        log_extra["trace_id"] = trace_id
-    if logger:
-        logger.error(f"Exception captured: {exc}", extra=log_extra)
-    capture_exception(exc)
-    # 추가 확장: span_id 등 context 포함 가능
+    try:
+        trace_id = None
+        try:
+            ctx = trace.get_current_span()
+            if ctx and ctx.get_span_context().is_valid:
+                trace_id = hex(ctx.get_span_context().trace_id)
+        except Exception as e:
+            if logger:
+                logger.warning(f"[capture_and_log] trace context unavailable: {e}")
+        log_extra = extra or {}
+        if trace_id:
+            log_extra["trace_id"] = trace_id
+        if logger:
+            try:
+                logger.error(f"Exception captured: {exc}", extra=log_extra)
+            except Exception as e:
+                print(f"[capture_and_log] logger error: {e}")
+        try:
+            capture_exception(exc)
+        except Exception as e:
+            if logger:
+                logger.warning(f"[capture_and_log] sentry capture failed: {e}")
+    except Exception as e:
+        print(f"[capture_and_log] fallback error: {e}")
