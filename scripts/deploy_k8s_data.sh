@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
 
-bash scripts/build_data.sh
-bash scripts/deploy_k8s.sh data
+echo "[deploy_k8s_data] Data 서비스 K8S 배포 시작"
+kubectl apply -f k8s/data-deployment.yaml
+kubectl rollout restart deployment/data -n filedepot
+kubectl rollout status deployment/data -n filedepot
+echo "[deploy_k8s_data] Data 서비스 K8S 배포 완료"

@@ -7,25 +7,16 @@ from app.services.file.schemas.upload import UploadResponse
 
 router = APIRouter()
 
-@router.post(
-    "/imgplt/upload/{topic}",
-    tags=["file"],
-    summary="파일 업로드 및 메타데이터 Kafka 발행",
-    description="S3에 파일 업로드 후, 사용자 메타데이터를 Kafka topic으로 발행합니다.",
-    response_model=UploadResponse
-)
-async def upload_file_and_metadata(
-    topic: str = Path(..., description="Kafka topic 이름"),
-    file: UploadFile = File(..., description="업로드할 파일"),
-    metadata: str = Form(..., description="JSON 형식의 메타데이터 문자열"),
-    authorization: Optional[str] = Header(None, description="Bearer accessToken")
-):
-    # 인증
-    if get_auth_mode() == "remote":
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
-        access_token = authorization.split(" ", 1)[1]
-        await auth_service.verify_token_and_get_workspaces(access_token)
-    # file upload 및 kafka 발행 서비스 호출
-    service: FileUploadInterface = FileUploadInterface.get_service()
-    return await service.upload_file_and_metadata(topic, file, metadata)
+# 기존 upload_file_and_metadata 엔드포인트는 분리된 새로운 엔드포인트로 대체됨
+from fastapi import APIRouter
+from .upload_filemeta import router as file_meta_router
+from .upload_filejson import router as file_json_router
+
+router = APIRouter()
+
+# /upload/file-meta (파일+메타데이터 파일)
+router.include_router(file_meta_router, prefix="/upload")
+# /upload/file-json (파일+메타데이터 JSON)
+router.include_router(file_json_router, prefix="/upload")
+
+# 필요시 추가 endpoint/라우터를 여기에 등록

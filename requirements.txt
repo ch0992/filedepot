@@ -15,6 +15,7 @@ opentelemetry-instrumentation-fastapi
 faststream[kafka]
 python-multipart
 aiofiles
+boto3
 
 # --- Dev only ---
 # Lint/Static Analysis (CI/CD 및 개발 환경에서만 사용)

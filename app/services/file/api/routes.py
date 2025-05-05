@@ -1,7 +1,9 @@
 """
 파일 서비스 API 라우터
 """
-from fastapi import APIRouter, Query, Path, Body
+import logging
+logging.basicConfig(level=logging.INFO, force=True)
+from fastapi import APIRouter, Query, Path, Body, File, UploadFile, HTTPException
 from app.services.file.schemas.aliases import AliasEntry
 from typing import List
 
@@ -18,6 +20,40 @@ from app.services.file.api import raise_test
 
 router = APIRouter()
 router.include_router(raise_test.router)
+
+@router.post(
+    "/upload",
+    summary="파일 및 메타데이터 업로드 (파일 + 메타데이터: JSON 파일 or 직접입력)",
+    description="파일(file, 필수)과 메타데이터(metadata_file: JSON 파일 업로드, 또는 metadata_json: JSON 직접입력) 중 하나만 입력. metadata_file과 metadata_json 둘 다 입력/미입력 시 에러.",
+)
+async def upload(
+    file: UploadFile = File(..., description="업로드할 파일 (예: 이미지, 문서 등)"),
+    metadata_file: UploadFile = File(None, description="JSON 메타데이터 파일 업로드 (application/json)"),
+    metadata_json: FileMetadataRequest = Body(None, description="직접 입력할 JSON 메타데이터 (application/json)")
+):
+    '''
+    - 파일(file)은 필수
+    - 메타데이터: metadata_file(.json 파일) 또는 metadata_json(직접 입력) 둘 중 하나만 입력
+    - metadata_file과 metadata_json 둘 다 입력/미입력 시 400 에러
+    '''
+    if metadata_file and metadata_json:
+        raise HTTPException(400, "metadata_file(파일) 또는 metadata_json(body) 중 하나만 입력하세요.")
+    if not metadata_file and not metadata_json:
+        raise HTTPException(400, "metadata_file(파일) 또는 metadata_json(body) 중 하나는 반드시 입력해야 합니다.")
+    if metadata_file:
+        contents = await metadata_file.read()
+        import json
+        try:
+            data = json.loads(contents)
+            metadata_obj = FileMetadataRequest(**data)
+        except Exception:
+            raise HTTPException(400, "metadata_file의 JSON 파싱 실패 또는 필드 누락")
+    else:
+        metadata_obj = metadata_json
+    return {
+        "uploaded_filename": file.filename,
+        "metadata": metadata_obj.dict(),
+    }
 
 presigned_service = PresignedService()
 zip_presigned_service = ZipPresignedService()
@@ -56,5 +92,9 @@ async def produce_metadata_to_kafka(
     topic: str = Path(..., description="Kafka topic명"),
     body: FileMetadataRequest = Body(...)
 ):
-    print("[FILE] /topics/{topic} called")
-    return await metadata_producer_service.produce_metadata(topic, body)
+    import logging
+    logger = logging.getLogger("file-metadata-producer")
+    logger.info(f"[FILE] /topics/{topic} called with metadata: {body.dict()}")
+    result = await metadata_producer_service.produce_metadata(topic, body)
+    logger.info(f"[FILE] Kafka produce result: {result}")
+    return result

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
 
-DOCKER_BUILDKIT=1 docker build -t filedepot-file:local -f app/services/file/Dockerfile .
-echo "[빌드 완료] filedepot-file 이미지 생성 (태그: :local)"
+echo "[build_file] File 서비스 Docker 이미지 빌드 시작"
+docker build -t filedepot-file:local -f Dockerfile.file .
+echo "[build_file] File 서비스 Docker 이미지 빌드 완료"
