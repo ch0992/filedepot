@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import Any, Dict
 
 class TableRecordRequest(BaseModel):
     # 예시 필드, 실제 Mart 테이블 구조에 따라 변경

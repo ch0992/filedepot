@@ -1,7 +1,4 @@
-import pytest
-from unittest import mock
 from app.services.gateway.services.impl import internal_call
-from opentelemetry.propagate import extract
 
 def test_traceparent_header_injected(monkeypatch):
     """
@@ -15,7 +12,7 @@ def test_traceparent_header_injected(monkeypatch):
                 return {'ok': True}
         return Resp()
     monkeypatch.setattr("requests.get", fake_requests_get)
-    resp = internal_call.call_internal_service("http://file-service/test-api")
+    internal_call.call_internal_service("http://file-service/test-api")
     headers = called['headers']
     # traceparent가 실제로 헤더에 포함되어 있는지 확인
     assert any(k.lower() == 'traceparent' for k in headers)

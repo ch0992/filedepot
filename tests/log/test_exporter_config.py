@@ -35,7 +35,7 @@ def test_stdout_exporter(monkeypatch):
 
 def test_jaeger_exporter(monkeypatch):
     try:
-        import opentelemetry.exporter.jaeger.thrift
+        # import opentelemetry.exporter.jaeger.thrift (for availability test only)
     except ImportError:
         pytest.skip("jaeger exporter not installed")
     tracing = reload_tracing_with_env("jaeger", jaeger_host="localhost", jaeger_port=6831)
@@ -46,7 +46,7 @@ def test_jaeger_exporter(monkeypatch):
 
 def test_tempo_exporter(monkeypatch):
     try:
-        import opentelemetry.exporter.otlp.proto.http.trace_exporter
+        # import opentelemetry.exporter.otlp.proto.http.trace_exporter (for availability test only)
     except ImportError:
         pytest.skip("otlp exporter not installed")
     tracing = reload_tracing_with_env("tempo", otlp_endpoint="http://tempo:4318/v1/traces")

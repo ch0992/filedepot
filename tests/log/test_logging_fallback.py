@@ -1,9 +1,5 @@
-import os
-import sys
 import logging
-import importlib
 import pytest
-from unittest import mock
 
 from app.services.log import tracing, sentry, exceptions
 

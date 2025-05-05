@@ -21,11 +21,11 @@ load_dotenv(ENV_PATH, override=True)
 print("[gateway] AUTH_MODE (from .env):", os.environ.get("AUTH_MODE"))
 
 tags_metadata = [
-    {"name": "auth", "description": "인증 관련 API"},
-    {"name": "data", "description": "데이터 관련 API"},
-    {"name": "file", "description": "파일 관련 API"},
-    {"name": "log", "description": "로그 관련 API"},
-    {"name": "Health", "description": "헬스 체크 API"},
+    {"name": "Auth", "description": "인증 관련 API"},
+    {"name": "Data", "description": "데이터 관련 API"},
+    {"name": "File", "description": "파일 관련 API"},
+    {"name": "Log", "description": "로그 관련 API"},
+    {"name": "Health", "description": "헬스 체크 API"}
 ]
 
 app = FastAPI(
@@ -46,7 +46,7 @@ app.add_middleware(TraceLoggingMiddleware)
 
 # 라우터 등록
 gateway_router.tags = ["gateway"]
-app.include_router(gateway_router)
+app.include_router(gateway_router, prefix="/gateway")
 
 import logging
 import sys
@@ -83,6 +83,4 @@ for route in app.routes:
 from fastapi.responses import JSONResponse
 from fastapi.requests import Request
 
-@app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
-async def catch_all(request: Request, full_path: str):
-    return JSONResponse(status_code=200, content={"message": "fallback: valid endpoint (no 404)", "path": full_path})
+

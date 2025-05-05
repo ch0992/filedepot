@@ -1,9 +1,0 @@
-# manifests/file-app.yaml
-# ArgoCD App 정의 (placeholder)
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: file-app
-spec:
-  # 실제 spec 정의 필요
-  project: default

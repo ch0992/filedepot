@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-python-dotenv
-opentelemetry-api
-opentelemetry-sdk
-opentelemetry-exporter-otlp
-sentry-sdk
-opentelemetry-instrumentation
-opentelemetry-instrumentation-fastapi

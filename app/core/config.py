@@ -16,5 +16,6 @@ class Settings:
             self.FILE_SERVICE_URL = os.getenv("FILE_SERVICE_URL", "http://file:8001")
             self.DATA_SERVICE_URL = os.getenv("DATA_SERVICE_URL", "http://data:8002")
             self.LOG_SERVICE_URL = os.getenv("LOG_SERVICE_URL", "http://log:8003")
+        
 
 settings = Settings()

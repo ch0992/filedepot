@@ -56,5 +56,5 @@ async def produce_metadata_to_kafka(
     topic: str = Path(..., description="Kafka topic명"),
     body: FileMetadataRequest = Body(...)
 ):
-    print(f"[FILE] /topics/{{topic}} called")
+    print("[FILE] /topics/{topic} called")
     return await metadata_producer_service.produce_metadata(topic, body)

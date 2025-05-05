@@ -12,3 +12,8 @@ opentelemetry-exporter-otlp
 sentry-sdk
 opentelemetry-instrumentation
 opentelemetry-instrumentation-fastapi
+faststream[kafka]
+
+# --- Dev only ---
+# Lint/Static Analysis (CI/CD 및 개발 환경에서만 사용)
+ruff

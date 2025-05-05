@@ -1,0 +1,58 @@
+version: '3.8'
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: app/services/gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - file
+      - data
+      - log
+    volumes:
+      - ./app:/app
+      - ./tests:/app/tests
+    networks:
+      - filedepot-net
+  file:
+    build:
+      context: .
+      dockerfile: app/services/file/Dockerfile
+    expose:
+      - "8001"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./app:/app
+    networks:
+      - filedepot-net
+  data:
+    build:
+      context: .
+      dockerfile: app/services/data/Dockerfile
+    expose:
+      - "8002"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./app:/app
+    networks:
+      - filedepot-net
+  log:
+    build:
+      context: .
+      dockerfile: app/services/log/Dockerfile
+    expose:
+      - "8003"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./app:/app
+    networks:
+      - filedepot-net
+networks:
+  filedepot-net:
+    driver: bridge
