@@ -1,9 +1,11 @@
-from fastapi import APIRouter, UploadFile, File, Path, Header, HTTPException, status, Depends, Body
+from fastapi import APIRouter, UploadFile, File, Path, Header, HTTPException, status, Depends, Body, Form
 from typing import Optional
 from app.services.gateway.services.interfaces.file_upload_interface import FileUploadInterface
 from app.common.utils.auth_mode import get_auth_mode
 from app.services.gateway.services.impl.auth_module_service import auth_service
-from app.services.file.schemas.upload import UploadResponse, FileMetadataRequest
+from app.services.file.schemas.upload import UploadResponse
+from app.services.file.schemas.metadata import FileMetadataRequest
+import json
 
 router = APIRouter()
 
@@ -11,18 +13,13 @@ router = APIRouter()
     "/file-json/{topic}",
     tags=["file"],
     summary="파일+메타데이터(JSON) 업로드 및 Kafka 발행",
-    description="S3에 파일 업로드 후, JSON 형식의 메타데이터를 body로 받아 Kafka topic으로 발행.",
+    description="S3에 파일 업로드 후, JSON 형식의 메타데이터를 multipart/form-data로 받아 Kafka topic으로 발행.",
     response_model=UploadResponse
 )
 async def upload_file_and_metadata_json(
     topic: str = Path(..., description="Kafka topic 이름"),
     file: UploadFile = File(..., description="업로드할 파일"),
-    metadata: FileMetadataRequest = Body(..., example={
-        "file_id": "abc123",
-        "filename": "test.png",
-        "owner": "user1",
-        "size": 12345
-    }),
+    metadata: str = Form(..., description="JSON 형식의 메타데이터 문자열 예시: {\"file_id\":\"abc123\",\"filename\":\"test.png\",\"owner\":\"user1\",\"size\":12345}"),
     authorization: Optional[str] = Header(None, description="Bearer accessToken")
 ):
     if get_auth_mode() == "remote":

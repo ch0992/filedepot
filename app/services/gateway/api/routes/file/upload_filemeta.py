@@ -4,6 +4,7 @@ from app.services.gateway.services.interfaces.file_upload_interface import FileU
 from app.common.utils.auth_mode import get_auth_mode
 from app.services.gateway.services.impl.auth_module_service import auth_service
 from app.services.file.schemas.upload import UploadResponse
+import json
 
 router = APIRouter()
 

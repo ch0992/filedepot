@@ -3,5 +3,5 @@ Forwarding from [::1]:8000 -> 8000
 Handling connection for 8000
 Handling connection for 8000
 Handling connection for 8000
-E0505 16:23:12.408684   10530 portforward.go:391] "Unhandled Error" err="error copying from remote stream to local connection: readfrom tcp6 [::1]:8000->[::1]:60076: write tcp6 [::1]:8000->[::1]:60076: write: broken pipe"
-error: lost connection to pod
+Handling connection for 8000
+Handling connection for 8000
