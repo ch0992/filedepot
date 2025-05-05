@@ -10,10 +10,12 @@ kubectl create configmap $CONFIGMAP_NAME --from-env-file="$(dirname "$0")/../.en
 echo "[INFO] ConfigMap $CONFIGMAP_NAME updated in namespace $NAMESPACE."
 
 # 2. kind 클러스터에 최신 이미지 load
+# 병렬로 이미지 load
 for svc in gateway file data log; do
-  kind load docker-image filedepot-${svc}:local --name filedepot
-  echo "[INFO] kind(filedepot)에 filedepot-${svc}:local 이미지 load 완료."
+  kind load docker-image filedepot-${svc}:local --name filedepot &
 done
+wait
+echo "[INFO] 모든 이미지 병렬 load 완료."
 
 # 3. 전체 서비스 rollout restart 및 상태 확인
 echo "[INFO] Restarting deployments: gateway, file, data, log"

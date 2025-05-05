@@ -1,0 +1,31 @@
+from fastapi import APIRouter, UploadFile, File, Form, Path, Header, HTTPException, status, Depends
+from typing import Optional
+from app.services.gateway.services.interfaces.file_upload_interface import FileUploadInterface
+from app.common.utils.auth_mode import get_auth_mode
+from app.services.gateway.services.impl.auth_module_service import auth_service
+from app.services.file.schemas.upload import UploadResponse
+
+router = APIRouter()
+
+@router.post(
+    "/imgplt/upload/{topic}",
+    tags=["file"],
+    summary="파일 업로드 및 메타데이터 Kafka 발행",
+    description="S3에 파일 업로드 후, 사용자 메타데이터를 Kafka topic으로 발행합니다.",
+    response_model=UploadResponse
+)
+async def upload_file_and_metadata(
+    topic: str = Path(..., description="Kafka topic 이름"),
+    file: UploadFile = File(..., description="업로드할 파일"),
+    metadata: str = Form(..., description="JSON 형식의 메타데이터 문자열"),
+    authorization: Optional[str] = Header(None, description="Bearer accessToken")
+):
+    # 인증
+    if get_auth_mode() == "remote":
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header required")
+        access_token = authorization.split(" ", 1)[1]
+        await auth_service.verify_token_and_get_workspaces(access_token)
+    # file upload 및 kafka 발행 서비스 호출
+    service: FileUploadInterface = FileUploadInterface.get_service()
+    return await service.upload_file_and_metadata(topic, file, metadata)

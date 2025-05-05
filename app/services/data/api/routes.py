@@ -5,7 +5,7 @@ import json
 from fastapi import APIRouter, Path, Body, HTTPException
 from app.services.data.schemas.ping import PingResponse
 from app.services.data.schemas.kafka import KafkaProduceResult
-from app.common.utils.auth_mode import get_auth_mode
+
 
 router = APIRouter()
 
@@ -38,13 +38,6 @@ async def produce_table_record_to_kafka(
     table: str = Path(..., description="Kafka 토픽명"),
     body: dict = Body(...)
 ):
-    if get_auth_mode() == "remote":
-        if not authorization or not authorization.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Authorization header required")
-        access_token = authorization.split(" ", 1)[1]
-        headers = {"Authorization": f"Bearer {access_token}"}
-    else:
-        headers = {}
     print(f"[DATA] /topics/{{table}} called")
     # 실제로는 DB/Kafka 등에 데이터 적재
     return {"topic": table, "status": "success", "message": json.dumps(body)}
