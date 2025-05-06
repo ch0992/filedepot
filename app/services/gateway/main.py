@@ -51,6 +51,20 @@ app.add_middleware(TraceLoggingMiddleware)
 gateway_router.tags = ["gateway"]
 app.include_router(gateway_router, prefix="/gateway")
 
+"""
+[📄 main.py - Gateway FastAPI 엔트리포인트]
+
+설명:
+- Gateway 서비스의 FastAPI 앱 진입점
+- 글로벌 예외 핸들러, Sentry 연동, CORS, OpenAPI 메타데이터 등 초기화
+- 서비스별 라우터 등록 및 이벤트 핸들러 관리
+
+주요 연동:
+- Sentry (옵션)
+- app/services/gateway/api/routes (라우터)
+- 환경변수: SENTRY, SENTRY_DSN 등
+"""
+
 import logging
 import sys
 import traceback
@@ -59,28 +73,37 @@ from fastapi import Request
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    import logging
-    from fastapi import HTTPException
-    from app.common.exceptions import SystemConfigException
+    """
+    모든 미처리 예외를 잡아 로깅/Sentry 전송 및 일관된 에러 응답 반환
+
+    Args:
+        request (Request): FastAPI 요청 객체
+        exc (Exception): 발생한 예외
+
+    Returns:
+        JSONResponse: 500 또는 예외에 따른 status code와 메시지
+
+    Raises:
+        없음 (모든 예외를 핸들링)
+    """
     logger = logging.getLogger("gateway-exception")
-    # Sentry 연동
-    global SENTRY_ENABLED, SENTRY_DSN
+    # WHY: Sentry 연동이 활성화된 경우 예외를 Sentry로 전송
+    SENTRY_ENABLED = os.environ.get("SENTRY", "false").lower() == "true"
+    SENTRY_DSN = os.environ.get("SENTRY_DSN") or None
     if SENTRY_ENABLED and SENTRY_DSN:
         try:
             import sentry_sdk
             sentry_sdk.capture_exception(exc)
         except Exception as sentry_exc:
             logger.error(f"[Sentry] 연동 실패: {sentry_exc}")
-    # 상세 로깅
     logger.error(f"[Global Exception Handler] {request.method} {request.url} - {exc}", exc_info=True)
-    # HTTPException은 FastAPI가 자체 처리하므로 여기선 생략
-    # 커스텀 SystemConfigException 등은 그대로 반환
+    from fastapi import HTTPException
     if isinstance(exc, HTTPException):
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail},
         )
-    # 기타 미처리 예외는 500으로 통일
+    # WHY: 미처리 예외는 500으로 통일
     return JSONResponse(
         status_code=500,
         content={"detail": "예상치 못한 오류가 발생했습니다.", "error": str(exc)},
