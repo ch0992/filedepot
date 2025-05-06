@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, Path, Header, HTTPException, status, Depends, Body, Form
+from fastapi import APIRouter, UploadFile, File, Path, Header, status, Depends, Body, Form
+from app.common.exceptions import BadRequestException, NotFoundException, SystemConfigException
 from typing import Optional
 from app.services.gateway.services.interfaces.file_upload_interface import FileUploadInterface
 from app.common.utils.auth_mode import get_auth_mode
@@ -11,7 +12,7 @@ router = APIRouter()
 
 @router.post(
     "/file-json/{topic}",
-    tags=["file"],
+    tags=["File"],
     summary="파일+메타데이터(JSON) 업로드 및 Kafka 발행",
     description="S3에 파일 업로드 후, JSON 형식의 메타데이터를 multipart/form-data로 받아 Kafka topic으로 발행.",
     response_model=UploadResponse

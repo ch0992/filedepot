@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.services.gateway.api.routes.file.list import router as file_list_router
 from app.services.gateway.api.routes import file
 from app.services.gateway.api.routes.auth import auths
 from app.services.gateway.api.routes.data import topics as data_topics, curs as data_curs
@@ -7,6 +8,7 @@ from app.services.gateway.api.routes.test import sentry_test
 
 
 router = APIRouter()
+router.include_router(file_list_router)
 router.include_router(auths.router)
 router.include_router(file.router)
 router.include_router(data_topics.router)

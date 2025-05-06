@@ -60,6 +60,27 @@ zip_presigned_service = ZipPresignedService()
 meta_query_service = MetaQueryService()
 metadata_producer_service = MetadataProducerService()
 
+from app.services.file.services.impl.list_query_service import ListQueryService
+from app.services.file.schemas.listing import S3FileEntry
+from fastapi import status
+
+@router.get(
+    "/imgplt/list/{prefix}",
+    response_model=List[S3FileEntry],
+    summary="S3 prefix 기반 파일 리스트 조회",
+    description="S3 버킷 내 지정된 prefix 하위의 파일 목록을 조회합니다.",
+    tags=["File"]
+)
+async def list_files_by_prefix(prefix: str = Path(..., description="S3 prefix 경로 (예: uploads/2025/)")):
+    '''
+    지정된 prefix 하위의 S3 파일 목록을 반환합니다. 파일이 없으면 404 반환.
+    '''
+    service = ListQueryService()
+    files = await service.list_files(prefix)
+    if not files:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지정한 prefix에 파일이 없습니다.")
+    return files
+
 @router.get("/ping", summary="Ping-pong API")
 async def ping():
     return {"message": "pong"}

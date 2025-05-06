@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Path, HTTPException, Header
+from fastapi import APIRouter, Path, status, Header
+from app.common.exceptions import BadRequestException, NotFoundException, SystemConfigException
 from app.services.gateway.services.impl.file_metadata_service import FileMetadataService
 from app.services.file.schemas.metadata import FileMetadataRequest, KafkaProduceResult
 from app.core.config import settings
@@ -15,7 +16,7 @@ tracer = get_tracer("gateway")
 @router.post(
     "/topics/{topic}",
     response_model=KafkaProduceResult,
-    tags=["file"],
+    tags=["File"],
     summary="Kafka를 통한 메타데이터 적재",
     description="단건 메타 정보를 Kafka topic으로 발행합니다."
 )

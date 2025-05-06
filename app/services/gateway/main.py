@@ -31,7 +31,10 @@ tags_metadata = [
 app = FastAPI(
     title="Gateway Service",
     description="Auth/JWT gateway microservice",
-    openapi_tags=tags_metadata
+    openapi_tags=tags_metadata,
+    openapi_url="/gateway/openapi.json",
+    docs_url="/gateway/docs",
+    redoc_url="/gateway/redoc"
 )
 
 # OpenTelemetry 초기화
@@ -56,11 +59,31 @@ from fastapi import Request
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    print("[Global Exception Handler] 예외 발생:", file=sys.stderr)
-    traceback.print_exc()
+    import logging
+    from fastapi import HTTPException
+    from app.common.exceptions import SystemConfigException
+    logger = logging.getLogger("gateway-exception")
+    # Sentry 연동
+    global SENTRY_ENABLED, SENTRY_DSN
+    if SENTRY_ENABLED and SENTRY_DSN:
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(exc)
+        except Exception as sentry_exc:
+            logger.error(f"[Sentry] 연동 실패: {sentry_exc}")
+    # 상세 로깅
+    logger.error(f"[Global Exception Handler] {request.method} {request.url} - {exc}", exc_info=True)
+    # HTTPException은 FastAPI가 자체 처리하므로 여기선 생략
+    # 커스텀 SystemConfigException 등은 그대로 반환
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
+    # 기타 미처리 예외는 500으로 통일
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)},
+        content={"detail": "예상치 못한 오류가 발생했습니다.", "error": str(exc)},
     )
 
 @app.on_event("startup")
